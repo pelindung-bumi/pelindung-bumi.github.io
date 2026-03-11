@@ -1,63 +1,81 @@
 ---
-import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import type { BlogGitMeta } from '../utils/blogGitMeta';
 
-type Props = CollectionEntry<'blog'>['data'];
+interface Props extends CollectionEntry<'blog'>['data'] {
+	gitMeta?: BlogGitMeta;
+	headings?: { depth: number; slug: string; text: string }[];
+}
 
-const { title, description, author, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, gitMeta, headings = [] } = Astro.props;
+const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
 ---
 
+<!doctype html>
 <html lang="en">
 	<head>
 		<BaseHead title={title} description={description} />
 	</head>
 
-	<body class="bg-background text-foreground min-h-screen flex flex-col">
+	<body class="min-h-screen bg-background text-foreground">
 		<Header />
+		<main>
+			<div class="article-shell">
+				<div class="article-layout">
+					{tocHeadings.length > 0 && (
+						<aside class="toc-panel hidden md:block">
+							<p class="eyebrow">Contents</p>
+							<ul>
+								{tocHeadings.map((heading) => (
+									<li class:list={[heading.depth === 3 && 'toc-level-3']}>
+										<a href={`#${heading.slug}`}>{heading.text}</a>
+									</li>
+								))}
+							</ul>
+						</aside>
+					)}
 
-		<main class="flex-1">
-			<article>
-				<!-- Hero image -->
-				{heroImage && (
-					<div class="w-full max-w-screen-lg mx-auto px-8 pt-8">
-						<Image
-							width={1020}
-							height={510}
-							src={heroImage}
-							alt=""
-							class="w-full rounded-xl object-cover shadow-md"
-						/>
-					</div>
-				)}
+					<article class="surface-panel overflow-hidden">
+						<div class="article-header">
+							<div class="article-header-grid">
+								<div>
+									<p class="eyebrow">Blog</p>
+									<h1 class="display-title max-w-4xl text-[clamp(2.6rem,6vw,4.75rem)]">{title}</h1>
+									<p class="lede mt-5 max-w-2xl">{description}</p>
+								</div>
 
-				<!-- Article header -->
-				<div class="max-w-2xl mx-auto px-8 pt-10 pb-4 text-center">
-					<div class="text-sm text-muted-foreground mb-3 flex flex-col items-center gap-1">
-						<span><FormattedDate date={pubDate} /></span>
-						{author && <span class="font-medium text-foreground">oleh {author}</span>}
-						{updatedDate && (
-							<span class="italic">
-								Diperbarui: <FormattedDate date={updatedDate} />
-							</span>
-						)}
-					</div>
-					<h1 class="text-4xl font-bold text-foreground leading-tight mb-6">
-						{title}
-					</h1>
-					<hr class="border-border" />
+								<div class="article-note">
+									<h3>Article info</h3>
+									<div class="article-meta mt-4">
+										<span class="meta-pill">
+											Published <FormattedDate date={pubDate} />
+										</span>
+										{gitMeta?.writer && (
+											<a class="meta-pill no-underline" href={gitMeta.writer.url} target="_blank" rel="noopener noreferrer">
+												Writer @{gitMeta.writer.username}
+											</a>
+										)}
+										{gitMeta?.modifiedBy && gitMeta.modifiedAt && (
+											<a class="meta-pill no-underline" href={gitMeta.modifiedBy.url} target="_blank" rel="noopener noreferrer">
+												Modified by @{gitMeta.modifiedBy.username} on <FormattedDate date={gitMeta.modifiedAt} />
+											</a>
+										)}
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="prose max-w-none px-6 pb-10 sm:px-8 lg:px-12">
+							<slot />
+						</div>
+					</article>
 				</div>
-
-				<!-- Prose content -->
-				<div class="prose max-w-2xl mx-auto px-8 py-8">
-					<slot />
-				</div>
-			</article>
+			</div>
 		</main>
-
 		<Footer />
 	</body>
 </html>

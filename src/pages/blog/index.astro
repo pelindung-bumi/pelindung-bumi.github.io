@@ -1,60 +1,68 @@
 ---
-import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { getBlogGitMeta } from '../../utils/blogGitMeta';
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+const posts = await Promise.all(
+	(await getCollection('blog'))
+		.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+		.map(async (post) => ({
+			post,
+			gitMeta: await getBlogGitMeta(post),
+		})),
 );
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<BaseHead title={`${SITE_TITLE} Blog`} description={SITE_DESCRIPTION} />
 	</head>
-	<body class="bg-background text-foreground min-h-screen flex flex-col">
+	<body class="min-h-screen bg-background text-foreground">
 		<Header />
 
-		<main class="flex-1 max-w-screen-xl mx-auto px-8 w-full py-12">
-			<h1 class="text-3xl font-bold text-foreground mb-10">Blog</h1>
+		<main class="page-shell py-10 sm:py-14">
+			<div class="page-intro max-w-3xl">
+				<span class="section-label">Blog</span>
+				<h1 class="display-title text-[clamp(2.8rem,6vw,5rem)]">Notes from people who are still learning.</h1>
+				<p class="lede">
+					This blog collects what we are learning about infrastructure, Kubernetes, cloud, SRE,
+					DevOps, and nearby topics. We try to keep the writing simple, useful, and honest.
+				</p>
+			</div>
 
-			<ul class="grid grid-cols-1 sm:grid-cols-2 gap-8 list-none p-0 m-0">
-				{
-					posts.map((post, index) => (
-						<li class:list={[index === 0 && 'sm:col-span-2']}>
-							<a href={`/blog/${post.id}/`} class="group block no-underline">
-								{post.data.heroImage && (
-									<Image
-										width={index === 0 ? 1020 : 720}
-										height={index === 0 ? 510 : 360}
-										src={post.data.heroImage}
-										alt=""
-										class="w-full rounded-xl object-cover mb-3 transition-shadow group-hover:shadow-lg"
-									/>
+			<div class="mt-8 grid gap-6">
+				{posts.map(({ post, gitMeta }) => (
+					<a class="post-card no-underline" href={`/blog/${post.id}/`}>
+						<div class="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(14rem,0.8fr)] md:items-start">
+							<div>
+								<p class="eyebrow">Article</p>
+								<h2 class="section-title mt-3 text-[clamp(1.9rem,4vw,3rem)]">{post.data.title}</h2>
+								<p class="lede mt-4 max-w-3xl">{post.data.description}</p>
+							</div>
+
+							<div class="article-meta md:justify-end">
+								<span class="meta-pill"><FormattedDate date={post.data.pubDate} /></span>
+								{gitMeta.writer && (
+									<a class="meta-pill no-underline" href={gitMeta.writer.url} target="_blank" rel="noopener noreferrer">
+										Writer @{gitMeta.writer.username}
+									</a>
 								)}
-								<h4
-									class:list={[
-										'font-semibold text-foreground leading-snug mb-1 group-hover:text-muted-foreground transition-colors m-0',
-										index === 0 ? 'text-2xl' : 'text-lg',
-									]}
-								>
-									{post.data.title}
-								</h4>
-								<p class="text-sm text-muted-foreground m-0">
-									<FormattedDate date={post.data.pubDate} />
-									{post.data.author && <span class="mx-1">·</span>}
-									{post.data.author && <span>{post.data.author}</span>}
-								</p>
-							</a>
-						</li>
-					))
-				}
-			</ul>
+								{gitMeta.modifiedBy && gitMeta.modifiedAt && (
+									<a class="meta-pill no-underline" href={gitMeta.modifiedBy.url} target="_blank" rel="noopener noreferrer">
+										Modified @{gitMeta.modifiedBy.username}
+									</a>
+								)}
+								{gitMeta.modifiedAt && <span class="meta-pill"><FormattedDate date={gitMeta.modifiedAt} /></span>}
+							</div>
+						</div>
+					</a>
+				))}
+			</div>
 		</main>
 
 		<Footer />

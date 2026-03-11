@@ -1,85 +1,68 @@
 ---
-import AboutHeroImage from '../assets/blog-placeholder-about.jpg';
-import Layout from '../layouts/BlogPost.astro';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { GITHUB_URL, SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
-<Layout
-	title="Tentang Pelindung Bumi"
-	description="Kami adalah komunitas yang percaya bahwa setiap orang bisa menjadi pelindung bumi."
-	pubDate={new Date('January 01 2025')}
-	heroImage={AboutHeroImage}
->
-	<h2>Siapa Kami?</h2>
-	<p>
-		<strong>Pelindung Bumi</strong> adalah platform edukasi dan aksi lingkungan yang lahir dari
-		keprihatinan tiga anak muda Indonesia terhadap kondisi alam yang semakin memprihatinkan.
-		Kami percaya bahwa perubahan nyata dimulai dari kesadaran — dan kesadaran dimulai dari
-		informasi yang benar, mudah dipahami, dan menginspirasi tindakan.
-	</p>
-	<p>
-		Melalui artikel, panduan praktis, dan kampanye komunitas, kami mengajak siapa saja untuk
-		ikut ambil bagian dalam menjaga bumi — tidak peduli seberapa kecil langkah yang bisa
-		kamu ambil hari ini.
-	</p>
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`About ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+	</head>
+	<body class="min-h-screen bg-background text-foreground">
+		<Header />
+		<main class="page-shell py-10 sm:py-14">
+			<section class="surface-panel p-6 sm:p-8 lg:p-10">
+				<div class="page-intro max-w-4xl">
+					<span class="section-label">About</span>
+					<h1 class="display-title text-[clamp(2.8rem,6vw,5rem)]">We are curious people learning technology together.</h1>
+					<p class="lede max-w-3xl">
+						Pelindung Bumi is an organization built around curiosity. We like studying technical
+						topics, writing down what we learn, and sharing that learning with anyone who finds it
+						useful.
+					</p>
+				</div>
+			</section>
 
-	<h2>Tim Kami</h2>
-
-	<h3>Rivaldo</h3>
-	<p>
-		Rivaldo adalah seorang mahasiswa ilmu lingkungan yang tumbuh besar di Kalimantan dan
-		menyaksikan langsung bagaimana hutan di sekitar kampung halamannya berubah menjadi
-		perkebunan sawit. Pengalaman itu membuatnya berdedikasi untuk menulis tentang deforestasi,
-		perubahan iklim, dan kebijakan lingkungan. Tulisannya selalu berbasis fakta ilmiah namun
-		dikemas agar mudah dipahami semua kalangan.
-	</p>
-	<p>
-		<em>"Hutan bukan sekadar pohon. Hutan adalah kehidupan itu sendiri."</em>
-	</p>
-
-	<h3>Leo</h3>
-	<p>
-		Leo adalah seorang penyelam dan fotografer bawah laut yang jatuh cinta dengan lautan
-		Indonesia sejak pertama kali menyelam di Bunaken pada usia 16 tahun. Apa yang dilihatnya
-		di balik permukaan laut — baik keindahan maupun kerusakannya — mendorongnya untuk
-		menyuarakan krisis plastik dan kerusakan ekosistem laut. Leo juga aktif mengorganisir
-		kegiatan beach clean-up di berbagai kota.
-	</p>
-	<p>
-		<em>"Laut bukan tempat sampah. Laut adalah sumber kehidupan kita."</em>
-	</p>
-
-	<h3>Rolando</h3>
-	<p>
-		Rolando adalah seorang guru SMA yang mengintegrasikan pendidikan lingkungan ke dalam
-		setiap mata pelajaran yang ia ajarkan. Di luar kelas, ia memimpin komunitas penanaman
-		pohon di wilayah urban Jakarta dan pinggiran kota-kota besar. Rolando percaya bahwa
-		reforestasi dan keterlibatan komunitas lokal adalah kunci pemulihan ekosistem Indonesia.
-	</p>
-	<p>
-		<em>"Tanam satu pohon hari ini. Itu sudah cukup untuk memulai."</em>
-	</p>
-
-	<h2>Visi & Misi</h2>
-	<p>
-		<strong>Visi:</strong> Indonesia yang hijau, lautnya bersih, dan masyarakatnya hidup selaras
-		dengan alam.
-	</p>
-	<p>
-		<strong>Misi:</strong>
-	</p>
-	<ul>
-		<li>Menyebarkan edukasi lingkungan yang akurat dan mudah dipahami</li>
-		<li>Menginspirasi aksi nyata di tingkat individu dan komunitas</li>
-		<li>Membangun jaringan pelindung bumi dari Sabang sampai Merauke</li>
-	</ul>
-
-	<h2>Bergabunglah</h2>
-	<p>
-		Pelindung Bumi bukan milik kami bertiga. Ini adalah gerakan bersama. Kamu bisa bergabung
-		dengan membaca dan berbagi artikel kami, mengikuti kegiatan komunitas, atau sekadar
-		memulai satu kebiasaan ramah lingkungan hari ini.
-	</p>
-	<p>
-		Bersama, kita bisa.
-	</p>
-</Layout>
+			<section class="mt-10 section-grid cols-2">
+				<div class="info-card">
+					<p class="eyebrow">What we learn</p>
+					<h3 class="mt-3">Infrastructure and the systems around it</h3>
+					<p>
+						Our interests stay close to infrastructure, Kubernetes, cloud, SRE, DevOps, and other
+						technical areas that help people understand how modern systems are built and operated.
+					</p>
+				</div>
+				<div class="info-card">
+					<p class="eyebrow">Why this exists</p>
+					<h3 class="mt-3">We share while we are still learning</h3>
+					<p>
+						We do not want to wait until we feel like experts. We prefer to learn in public,
+						capture useful lessons, and let the writing grow with our understanding.
+					</p>
+				</div>
+				<div class="info-card">
+					<p class="eyebrow">The name</p>
+					<h3 class="mt-3">Pelindung Bumi is just a cool name</h3>
+					<p>
+						There is no superhero story here. We simply liked the name. What gives it meaning is
+						the organization behind it and the things we choose to share.
+					</p>
+				</div>
+				<div class="info-card">
+					<p class="eyebrow">Follow along</p>
+					<h3 class="mt-3">GitHub is our public home</h3>
+					<p>
+						If you want to see what we are writing or working on, GitHub is the place where we keep
+						it public.
+					</p>
+					<a class="button-link secondary mt-6" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+						Open GitHub
+					</a>
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>

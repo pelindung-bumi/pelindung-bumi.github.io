@@ -1,8 +1,14 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { GITHUB_URL, SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const latestPost = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+)[0];
 ---
 
 <!doctype html>
@@ -10,38 +16,131 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 	</head>
-	<body class="bg-background text-foreground min-h-screen flex flex-col">
+
+	<body class="min-h-screen bg-background text-foreground">
 		<Header />
-		<main class="flex-1 max-w-2xl mx-auto px-8 w-full py-16 prose">
-			<h1>🌿 Selamat Datang di Pelindung Bumi</h1>
-			<p>
-				Bumi kita sedang berteriak minta tolong. Hutan-hutan menghilang, lautan tercemar plastik,
-				suhu global terus meningkat — dan waktu kita semakin terbatas.
-			</p>
-			<p>
-				<strong>Pelindung Bumi</strong> hadir sebagai ruang edukasi dan aksi nyata untuk siapa saja
-				yang ingin ikut menjaga bumi. Tidak perlu jadi ahli lingkungan dulu. Cukup mulai dari sini,
-				mulai dari sekarang.
-			</p>
-			<h2>Apa yang Bisa Kamu Temukan di Sini?</h2>
-			<ul>
-				<li>
-					<a href="/blog">Artikel lingkungan</a> yang berbasis fakta, ditulis oleh tim kami:
-					Rivaldo, Leo, dan Rolando
-				</li>
-				<li>Panduan gaya hidup ramah lingkungan yang praktis dan realistis</li>
-				<li>Informasi tentang isu-isu lingkungan terkini di Indonesia</li>
-				<li>Inspirasi aksi komunitas yang bisa kamu ikuti atau replikasi</li>
-			</ul>
-			<h2>Mulai dari Mana?</h2>
-			<p>
-				Baca artikel terbaru kami di <a href="/blog">halaman Blog</a>, atau kenali tim di balik
-				Pelindung Bumi di <a href="/about">halaman Tentang Kami</a>.
-			</p>
-			<p>
-				Satu langkah kecil hari ini bisa menjadi perubahan besar bagi generasi mendatang.
-				<strong>Bersama kita lindungi bumi.</strong>
-			</p>
+		<main class="pb-20 pt-8 sm:pt-12">
+			<section class="page-shell">
+				<div class="hero-grid">
+					<div class="surface-panel p-6 sm:p-8 lg:p-10">
+						<span class="section-label">Organization</span>
+						<h1 class="display-title mt-6 max-w-4xl">
+							Curious people learning technology and sharing it with the world.
+						</h1>
+						<p class="lede mt-6 max-w-2xl">
+							Pelindung Bumi is a small organization for people who enjoy learning about
+							infrastructure, Kubernetes, cloud, SRE, DevOps, and related engineering topics.
+							We are not superheroes. Pelindung Bumi is simply a cool name for a group that likes
+							to study, write, and share what we discover.
+						</p>
+						<div class="mt-8 flex flex-wrap gap-3">
+							<a class="button-link primary" href="/blog">Read the blog</a>
+							<a class="button-link secondary" href="/about">About the project</a>
+						</div>
+					</div>
+
+					<div class="surface-panel flex flex-col justify-between gap-6 p-6 sm:p-8">
+						<div>
+							<p class="eyebrow">What we share</p>
+							<div class="mt-4 space-y-3 text-sm text-muted-foreground">
+								<p class="meta-pill">Infrastructure notes</p>
+								<p class="meta-pill">Kubernetes basics</p>
+								<p class="meta-pill">Cloud learning logs</p>
+								<p class="meta-pill">SRE and DevOps lessons</p>
+							</div>
+						</div>
+
+						<div class="article-note">
+							<h3>Why we write</h3>
+							<p class="mt-3">
+								We write to document what we are learning and make that learning useful for other
+								people who are also curious about technology.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="page-shell mt-16">
+				<div class="page-intro">
+					<span class="section-label">What matters to us</span>
+					<h2 class="section-title">Learning in public, one topic at a time</h2>
+					<p class="lede max-w-3xl">
+						We care about understanding how systems work, how teams keep them reliable, and how
+						new learners can approach technical topics without pretending to know everything.
+					</p>
+				</div>
+
+				<div class="section-grid cols-3">
+					<div class="info-card">
+						<h3>Shared curiosity</h3>
+						<p>
+							We are people who like asking questions, reading docs, trying things, and turning
+							that process into writing others can use.
+						</p>
+					</div>
+					<div class="info-card">
+						<h3>Technical focus</h3>
+						<p>
+							Our attention stays around infrastructure, Kubernetes, cloud, SRE, DevOps, and the
+							daily habits that help systems stay understandable.
+						</p>
+					</div>
+					<div class="info-card">
+						<h3>Open sharing</h3>
+						<p>
+							We share what we learn as we go, even when it starts small. The goal is progress,
+							not performance.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			{latestPost && (
+				<section class="page-shell mt-16">
+					<div class="page-intro">
+						<span class="section-label">Latest post</span>
+						<h2 class="section-title">Start with the latest thing we learned</h2>
+					</div>
+
+					<a class="post-card no-underline" href={`/blog/${latestPost.id}/`}>
+						<div class="grid gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(15rem,0.85fr)] md:items-end">
+							<div>
+								<p class="eyebrow">Blog</p>
+								<h3 class="section-title mt-3 text-[clamp(2rem,3vw,3.25rem)]">{latestPost.data.title}</h3>
+								<p class="lede mt-4 max-w-2xl">{latestPost.data.description}</p>
+							</div>
+							<div class="article-meta md:justify-end">
+								<span class="meta-pill"><FormattedDate date={latestPost.data.pubDate} /></span>
+							</div>
+						</div>
+					</a>
+				</section>
+			)}
+
+			<section class="page-shell mt-16">
+				<div class="section-grid cols-2">
+					<div class="info-card">
+						<p class="eyebrow">About us</p>
+						<h3 class="mt-3">A name, a direction, and a habit of learning</h3>
+						<p>
+							Pelindung Bumi is just a cool name. What matters more is the habit behind it: keep
+							learning, keep writing, and keep sharing useful things with others.
+						</p>
+					</div>
+					<div class="info-card">
+						<p class="eyebrow">GitHub</p>
+						<h3 class="mt-3">Follow what we publish</h3>
+						<p>
+							If you want to keep up with the organization, GitHub is where we publish and keep
+							things visible.
+						</p>
+						<a class="button-link secondary mt-6" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+							Visit GitHub
+						</a>
+					</div>
+				</div>
+			</section>
 		</main>
 		<Footer />
 	</body>
