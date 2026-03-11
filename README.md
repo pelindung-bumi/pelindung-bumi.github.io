@@ -1,62 +1,59 @@
-# Astro Starter Kit: Blog
+# Pelindung Bumi
 
-```sh
-npm create astro@latest -- --template blog
-```
+Pelindung Bumi is a minimalist technology learning blog for curious people who want to learn and share knowledge about infrastructure, Kubernetes, cloud, SRE, DevOps, and related engineering topics.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Stack
 
-Features:
+- Astro
+- Bearnie as the base template
+- Bun for package management and scripts
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and OpenGraph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
+## What This Site Is
 
-## 🚀 Project Structure
+Pelindung Bumi is a small organization that writes in public. The goal is simple: learn technology, document what we understand, and share it with the world in a clean and readable format.
 
-Inside of your Astro project, you'll see the following folders and files:
+`Pelindung Bumi` is just a cool name. The site is not meant to present the organization as superheroes or finished experts.
+
+## Pages
+
+- `Home` introduces the organization and its focus
+- `Blog` lists the published articles
+- `About` explains the organization and why it writes
+
+## Blog Notes
+
+- Blog posts can show GitHub-based writer and modifier metadata
+- Local git names should not be displayed as public writer information
+- Blog posts may include a clickable table of contents for easier reading
+
+## Project Structure
 
 ```text
 ├── public/
 ├── src/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
+│   ├── components/
+│   ├── content/
+│   ├── layouts/
+│   ├── pages/
+│   ├── styles/
+│   └── utils/
 ├── astro.config.mjs
-├── README.md
 ├── package.json
 └── tsconfig.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Commands
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Run everything with Bun from the project root:
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+| Command | Action |
+| :-- | :-- |
+| `bun install` | Install dependencies |
+| `bun run dev` | Start local development server |
+| `bun run build` | Build the production site into `dist/` |
+| `bun run preview` | Preview the production build locally |
+| `bun run astro ...` | Run Astro CLI commands |
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Template Credit
 
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Credit
-
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+This project is built with Astro and uses Bearnie as the starting template base.
