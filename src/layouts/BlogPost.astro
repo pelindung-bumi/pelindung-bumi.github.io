@@ -77,5 +77,42 @@ const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.
 			</div>
 		</main>
 		<Footer />
+		<script>
+			function initCodeCopyButtons() {
+				const buttons = document.querySelectorAll('.code-copy-button');
+
+				buttons.forEach((button) => {
+					if (button.dataset.bound === 'true') {
+						return;
+					}
+
+					button.dataset.bound = 'true';
+					button.addEventListener('click', async () => {
+						const container = button.closest('.code-example');
+						const code = container?.getAttribute('data-code') ?? container?.querySelector('pre code')?.textContent ?? '';
+
+						if (!code) {
+							return;
+						}
+
+						try {
+							await navigator.clipboard.writeText(code);
+							button.classList.add('is-copied');
+							window.setTimeout(() => {
+								button.classList.remove('is-copied');
+							}, 1600);
+						} catch {
+							button.classList.add('is-failed');
+							window.setTimeout(() => {
+								button.classList.remove('is-failed');
+							}, 1600);
+						}
+					});
+				});
+			}
+
+			document.addEventListener('astro:page-load', initCodeCopyButtons);
+			initCodeCopyButtons();
+		</script>
 	</body>
 </html>

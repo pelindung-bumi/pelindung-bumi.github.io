@@ -456,6 +456,72 @@
     margin: 2rem 0;
   }
 
+  .prose .code-example {
+    margin: 2rem 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    background: #0f1720;
+    box-shadow: 0 24px 60px -42px rgba(0, 0, 0, 0.7);
+  }
+
+  .prose .code-example-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    color: rgba(214, 222, 235, 0.72);
+  }
+
+  .prose .code-copy-button {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    color: #eff6ff;
+    cursor: pointer;
+    transition: border-color 180ms ease, transform 180ms ease;
+  }
+
+  .prose .code-copy-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .prose .code-copy-button.is-copied {
+    color: #86efac;
+    border-color: rgba(134, 239, 172, 0.4);
+  }
+
+  .prose .code-copy-button.is-failed {
+    color: #fca5a5;
+    border-color: rgba(252, 165, 165, 0.4);
+  }
+
+  .prose .code-example pre {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    color: inherit;
+  }
+
+  .prose .code-example code {
+    display: block;
+    background: transparent;
+    padding: 0;
+  }
+
   .prose table {
     width: 100%;
     border-collapse: collapse;

@@ -37,12 +37,17 @@ const posts = await Promise.all(
 
 			<div class="mt-8 grid gap-6">
 				{posts.map(({ post, gitMeta }) => (
-					<a class="post-card no-underline" href={`/blog/${post.id}/`}>
+					<article class="post-card">
 						<div class="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(14rem,0.8fr)] md:items-start">
 							<div>
 								<p class="eyebrow">Article</p>
-								<h2 class="section-title mt-3 text-[clamp(1.9rem,4vw,3rem)]">{post.data.title}</h2>
+								<h2 class="section-title mt-3 text-[clamp(1.9rem,4vw,3rem)]">
+									<a class="no-underline hover:text-primary" href={`/blog/${post.id}/`}>{post.data.title}</a>
+								</h2>
 								<p class="lede mt-4 max-w-3xl">{post.data.description}</p>
+								<div class="mt-6">
+									<a class="button-link secondary" href={`/blog/${post.id}/`}>Read article</a>
+								</div>
 							</div>
 
 							<div class="article-meta md:justify-end">
@@ -60,7 +65,7 @@ const posts = await Promise.all(
 								{gitMeta.modifiedAt && <span class="meta-pill"><FormattedDate date={gitMeta.modifiedAt} /></span>}
 							</div>
 						</div>
-					</a>
+					</article>
 				))}
 			</div>
 		</main>

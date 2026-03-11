@@ -1,0 +1,24 @@
+---
+import { Code } from 'astro:components';
+
+interface Props {
+	filename: string;
+	code: string;
+	lang: string;
+}
+
+const { filename, code, lang } = Astro.props;
+---
+
+<div class="code-example" aria-label={`${filename} code example`} data-code={code}>
+	<div class="code-example-header">
+		<span>{filename}</span>
+		<button class="code-copy-button" type="button" aria-label="Copy code">
+			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+				<path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m0 16H8V7h11z" />
+			</svg>
+			<span class="sr-only">Copy code</span>
+		</button>
+	</div>
+	<Code code={code} lang={lang} />
+</div>
