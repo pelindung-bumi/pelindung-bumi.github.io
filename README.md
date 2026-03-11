@@ -54,24 +54,6 @@ Run everything with Bun from the project root:
 | `bun run preview` | Preview the production build locally |
 | `bun run astro ...` | Run Astro CLI commands |
 
-## Nix / devenv
-
-This repository also includes a `flake.nix` with `devenv` so contributors can set up a reproducible development shell with Nix.
-
-Enter the shell with:
-
-```bash
-nix develop --no-pure-eval
-```
-
-Inside the shell:
-
-- Bun is available automatically
-- `bun install` runs automatically through devenv
-- you can use the normal project commands such as `bun run dev` and `bun run build`
-
-This setup follows the devenv flake approach, which is useful for teams that want a flake-native development environment while still using devenv modules.
-
 ## Template Credit
 
 This project is built with Astro and uses Bearnie as the starting template base.
