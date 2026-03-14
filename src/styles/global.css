@@ -348,20 +348,25 @@
     gap: 0.65rem;
   }
 
-  .toc-panel a {
-    text-decoration: none;
-    color: var(--muted-foreground);
-    line-height: 1.5;
-  }
+   .toc-panel a {
+     text-decoration: none;
+     color: var(--muted-foreground);
+     line-height: 1.5;
+   }
 
-  .toc-panel a:hover {
-    color: var(--foreground);
-  }
+   .toc-panel a:hover {
+     color: var(--foreground);
+   }
 
-  .toc-level-3 {
-    padding-left: 0.9rem;
-    font-size: 0.94rem;
-  }
+   .toc-panel a.active-toc-item {
+     color: var(--foreground);
+     font-weight: 600;
+   }
+
+   .toc-level-3 {
+     padding-left: 0.9rem;
+     font-size: 0.94rem;
+   }
 
   .article-header {
     padding: 1.6rem;
@@ -414,6 +419,7 @@
     line-height: 1.08;
     margin-top: 2.1rem;
     margin-bottom: 0.8rem;
+    scroll-margin-top: 9.5rem;
   }
 
   .prose h1 { font-size: 2.7rem; }

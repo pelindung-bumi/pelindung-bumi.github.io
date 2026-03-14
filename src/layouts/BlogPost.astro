@@ -32,7 +32,7 @@ const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.
 							<ul>
 								{tocHeadings.map((heading) => (
 									<li class:list={[heading.depth === 3 && 'toc-level-3']}>
-										<a href={`#${heading.slug}`}>{heading.text}</a>
+										<a href={`#${heading.slug}`} data-toc-slug={heading.slug}>{heading.text}</a>
 									</li>
 								))}
 							</ul>
@@ -111,8 +111,72 @@ const tocHeadings = headings.filter((heading) => heading.depth === 2 || heading.
 				});
 			}
 
+			function initScrollTracking() {
+				const tocLinks = document.querySelectorAll('.toc-panel a[data-toc-slug]');
+				if (tocLinks.length === 0) return;
+
+				const tocItems = {};
+				tocLinks.forEach(link => {
+					const slug = link.dataset.tocSlug;
+					const element = document.getElementById(slug);
+					if (element) {
+						tocItems[slug] = {
+							element,
+							tocLink: link
+						};
+					}
+				});
+
+				const observerOptions = {
+					rootMargin: '-10% 0px -70% 0px',
+					threshold: 0
+				};
+
+				const observerCallback = (entries) => {
+					entries.forEach(entry => {
+						if (entry.isIntersecting && tocItems[entry.target.id]) {
+							// Remove active class from all TOC links
+							Object.values(tocItems).forEach(item => {
+								item.tocLink.classList.remove('active-toc-item');
+							});
+							
+							// Add active class to current TOC link
+							tocItems[entry.target.id].tocLink.classList.add('active-toc-item');
+						}
+					});
+				};
+
+				const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+				// Observe each section
+				Object.values(tocItems).forEach(item => {
+					if (item.element) {
+						observer.observe(item.element);
+					}
+				});
+
+				// Cleanup function
+				return () => {
+					observer.disconnect();
+				};
+			}
+
 			document.addEventListener('astro:page-load', initCodeCopyButtons);
 			initCodeCopyButtons();
+
+			// Initialize scroll tracking
+			let cleanupScrollTracking = null;
+			document.addEventListener('astro:page-load', () => {
+				if (cleanupScrollTracking) {
+					cleanupScrollTracking();
+				}
+				cleanupScrollTracking = initScrollTracking();
+			});
+			
+			// Initial call
+			if (typeof initScrollTracking === 'function') {
+				cleanupScrollTracking = initScrollTracking();
+			}
 		</script>
 	</body>
 </html>
