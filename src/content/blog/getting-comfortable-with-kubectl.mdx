@@ -1,0 +1,205 @@
+---
+title: 'Getting comfortable with kubectl'
+description: 'A practical guide to kubectl commands we use daily, from viewing resources to debugging pods and understanding the Kubernetes API.'
+pubDate: 2026-03-15
+writerGithub: 'rolandoartha'
+---
+
+import CodeExample from '../../components/CodeExample.astro';
+
+After reading our first post about Kubernetes manifests, the natural next step is to interact with a cluster using `kubectl`. This tool is the main way we talk to Kubernetes, and it becomes friendlier once we understand a few core patterns.
+
+## What is kubectl
+
+`kubectl` is the Kubernetes command-line tool. It lets us create, inspect, update, and delete resources in a cluster. The name stands for "Kubernetes control".
+
+When we run a kubectl command, our request goes through the Kubernetes API server, which then coordinates whatever we asked for across the cluster.
+
+## The basic pattern
+
+Most kubectl commands follow a simple pattern:
+
+<CodeExample
+  filename="kubectl-syntax"
+  lang="bash"
+  code={`kubectl <action> <resource-type> [<resource-name>] [flags]`}
+ />
+
+Here are some common actions:
+- `get` - list or describe a resource
+- `apply` - create or update a resource from a file
+- `delete` - remove a resource
+- `describe` - show detailed information about a resource
+- `logs` - view container logs
+- `exec` - run a command inside a container
+
+## Viewing resources
+
+The command we use most often is probably `kubectl get`. It shows us what is currently running in the cluster.
+
+<CodeExample
+  filename="get-pods"
+  lang="bash"
+  code={`# List all pods in the default namespace
+kubectl get pods
+
+# List pods in a specific namespace
+kubectl get pods -n my-namespace
+
+# List all resources in a namespace
+kubectl get all -n my-namespace
+
+# Get more details with wide output
+kubectl get pods -o wide`}
+ />
+
+The output usually shows us the name, ready status, restarts, age, and IP of each pod. Understanding this output helps us quickly spot issues.
+
+## Describing resources
+
+When `get` is not enough, `kubectl describe` gives us a detailed view of a resource, including events and conditions.
+
+<CodeExample
+  filename="describe-pod"
+  lang="bash"
+  code={`kubectl describe pod my-pod-name
+
+# Shorthand for describe
+kubectl desc pod my-pod-name`}
+ />
+
+This is often the first command we run when something is not working. The events section at the bottom usually tells us what went wrong.
+
+## Working with manifests
+
+We prefer applying manifests over using imperative commands because it keeps our infrastructure as code.
+
+<CodeExample
+  filename="apply-manifest"
+  lang="bash"
+  code={`# Apply a manifest file
+kubectl apply -f my-pod.yaml
+
+# Apply all manifests in a directory
+kubectl apply -f ./manifests/
+
+# See what would be applied without applying
+kubectl apply -f my-pod.yaml --dry-run=client
+
+# View the current state of a resource
+kubectl get -f my-pod.yaml -o yaml`}
+ />
+
+The `--dry-run` flag is useful for validating our manifests before applying them.
+
+## Debugging pods
+
+When a pod is not behaving as expected, we have a few helpful commands.
+
+### Checking logs
+
+<CodeExample
+  filename="logs-command"
+  lang="bash"
+  code={`# View logs from a container
+kubectl logs my-pod
+
+# Follow logs in real-time
+kubectl logs -f my-pod
+
+# View logs from a previous crashed container
+kubectl logs --previous my-pod
+
+# View logs from a specific container in a multi-container pod
+kubectl logs my-pod -c my-container`}
+ />
+
+### Executing commands inside a pod
+
+<CodeExample
+  filename="exec-command"
+  lang="bash"
+  code={`# Open an interactive shell
+kubectl exec -it my-pod -- /bin/sh
+
+# Run a single command
+kubectl exec my-pod -- ls -la
+
+# Run command in a specific container
+kubectl exec -it my-pod -c my-container -- /bin/bash`}
+ />
+
+This is helpful when we need to inspect the environment inside a running container.
+
+## Watching resources
+
+The `-w` or `--watch` flag keeps the terminal open and updates the output when changes happen.
+
+<CodeExample
+  filename="watch-pods"
+  lang="bash"
+  code={`# Watch pod status changes
+kubectl get pods -w
+
+# Watch all resources in a namespace
+kubectl get all -w -n my-namespace`}
+ />
+
+This is useful during deployments or when debugging issues that involve pods restarting.
+
+## Context and namespaces
+
+A common source of confusion is understanding which cluster and namespace we are working with.
+
+<CodeExample
+  filename="context-commands"
+  lang="bash"
+  code={`# List all contexts (clusters)
+kubectl config get-contexts
+
+# Show the current context
+kubectl config current-context
+
+# Switch to a different context
+kubectl config use-context my-context
+
+# List all namespaces
+kubectl get namespaces
+
+# Set the default namespace for commands
+kubectl config set-context --current --namespace=my-namespace`}
+ />
+
+It helps to double-check which cluster we are targeting before running destructive commands.
+
+## A small workflow we use
+
+When we start working on a new feature or debugging an issue, this is a typical workflow:
+
+<CodeExample
+  filename="typical-workflow"
+  lang="bash"
+  code={`# 1. Check current context
+kubectl config current-context
+
+# 2. List pods in the relevant namespace
+kubectl get pods -n my-namespace
+
+# 3. If a pod looks stuck, describe it
+kubectl describe pod my-pod -n my-namespace
+
+# 4. Check logs if needed
+kubectl logs my-pod -n my-namespace
+
+# 5. Apply changes when ready
+kubectl apply -f my-updated-manifest.yaml -n my-namespace
+
+# 6. Watch the deployment
+kubectl get pods -w -n my-namespace`}
+ />
+
+## Why this matters
+
+`kubectl` is the bridge between us and the cluster. The more comfortable we are with its commands, the faster we can understand what is happening in our systems. It also helps us communicate better with teammates when describing issues, because we all share the same vocabulary from using the same tool.
+
+In the next post, we might explore how to organize manifests or look into a specific resource type in more detail. For now, we hope this reference helps make kubectl feel less intimidating.
