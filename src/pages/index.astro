@@ -25,13 +25,11 @@ const latestPost = (await getCollection('blog')).sort(
 					<div class="surface-panel p-6 sm:p-8 lg:p-10">
 						<span class="section-label">Organization</span>
 						<h1 class="display-title mt-6 max-w-4xl">
-							Curious people learning technology and sharing it with the world.
+							We run systems and write about them.
 						</h1>
 						<p class="lede mt-6 max-w-2xl">
-							Pelindung Bumi is a small organization for people who enjoy learning about
-							infrastructure, Kubernetes, cloud, SRE, DevOps, and related engineering topics.
-							We are not superheroes. Pelindung Bumi is simply a cool name for a group that likes
-							to study, write, and share what we discover.
+							Pelindung Bumi is Rivaldo, Leo, and Rolando. We work with infrastructure,
+							Kubernetes, cloud, and SRE — and write down anything worth remembering.
 						</p>
 						<div class="mt-8 flex flex-wrap gap-3">
 							<a class="button-link primary" href="/blog">Read the blog</a>
@@ -53,8 +51,7 @@ const latestPost = (await getCollection('blog')).sort(
 						<div class="article-note">
 							<h3>Why we write</h3>
 							<p class="mt-3">
-								We write to document what we are learning and make that learning useful for other
-								people who are also curious about technology.
+								So we don't forget how we fixed it last time.
 							</p>
 						</div>
 					</div>
@@ -64,33 +61,29 @@ const latestPost = (await getCollection('blog')).sort(
 			<section class="page-shell mt-16">
 				<div class="page-intro">
 					<span class="section-label">What matters to us</span>
-					<h2 class="section-title">Learning in public, one topic at a time</h2>
+					<h2 class="section-title">What we're into</h2>
 					<p class="lede max-w-3xl">
-						We care about understanding how systems work, how teams keep them reliable, and how
-						new learners can approach technical topics without pretending to know everything.
+						Infrastructure, Kubernetes, cloud, SRE, DevOps. Pick something and read.
 					</p>
 				</div>
 
 				<div class="section-grid cols-3">
 					<div class="info-card">
-						<h3>Shared curiosity</h3>
+						<h3>Infrastructure</h3>
 						<p>
-							We are people who like asking questions, reading docs, trying things, and turning
-							that process into writing others can use.
+							Servers, networks, storage, and everything that sits underneath the apps people actually use.
 						</p>
 					</div>
 					<div class="info-card">
-						<h3>Technical focus</h3>
+						<h3>Kubernetes & Cloud</h3>
 						<p>
-							Our attention stays around infrastructure, Kubernetes, cloud, SRE, DevOps, and the
-							daily habits that help systems stay understandable.
+							Clusters, deployments, cloud providers — the stuff that either works perfectly or ruins your weekend.
 						</p>
 					</div>
 					<div class="info-card">
-						<h3>Open sharing</h3>
+						<h3>SRE & DevOps</h3>
 						<p>
-							We share what we learn as we go, even when it starts small. The goal is progress,
-							not performance.
+							Three engineers and their notes. We run into problems, figure them out, and write them down.
 						</p>
 					</div>
 				</div>
@@ -100,7 +93,7 @@ const latestPost = (await getCollection('blog')).sort(
 				<section class="page-shell mt-16">
 					<div class="page-intro">
 						<span class="section-label">Latest post</span>
-						<h2 class="section-title">Start with the latest thing we learned</h2>
+						<h2 class="section-title">Latest post</h2>
 					</div>
 
 					<a class="post-card no-underline" href={`/blog/${latestPost.id}/`}>
@@ -122,10 +115,9 @@ const latestPost = (await getCollection('blog')).sort(
 				<div class="section-grid cols-2">
 					<div class="info-card">
 						<p class="eyebrow">About us</p>
-						<h3 class="mt-3">A name, a direction, and a habit of learning</h3>
+						<h3 class="mt-3">Who we are</h3>
 						<p>
-							Pelindung Bumi is just a cool name. What matters more is the habit behind it: keep
-							learning, keep writing, and keep sharing useful things with others.
+							We run into problems, figure them out, and write them down. That's the whole thing.
 						</p>
 					</div>
 					<div class="info-card">
