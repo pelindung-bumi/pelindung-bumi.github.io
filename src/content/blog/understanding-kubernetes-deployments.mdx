@@ -1,0 +1,113 @@
+---
+title: 'Understanding Kubernetes Deployments'
+description: 'What a Deployment actually does, how it differs from a bare Pod, and why we almost always reach for it instead.'
+pubDate: 2026-03-16
+writerGithub: 'saktil'
+---
+
+import CodeExample from '../../components/CodeExample.astro';
+
+We covered Pods in the first post. A Pod runs your container — that part made sense. But in practice, we almost never create bare Pods in a real cluster. We use Deployments instead.
+
+Here is why, and what a Deployment actually looks like.
+
+## The problem with bare Pods
+
+If we run a bare Pod and it crashes, nothing brings it back. Kubernetes sees the Pod is gone and just... leaves it gone. There is no self-healing.
+
+A Deployment changes that. It tells Kubernetes to always keep a certain number of Pods running. If one dies, Kubernetes creates a new one. If we want to roll out a new version, the Deployment handles the transition.
+
+## What a Deployment looks like
+
+<CodeExample
+  filename="deployment.yaml"
+  lang="yaml"
+  code={`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80`}
+/>
+
+It looks longer than a plain Pod, but most of it is familiar. The new parts are `replicas`, `selector`, and `template`.
+
+## Breaking it down
+
+**`replicas: 3`** — we want three Pods running at all times. Kubernetes will create them, and if one goes down, it will start a replacement.
+
+**`selector.matchLabels`** — this is how the Deployment knows which Pods it owns. The labels here must match the labels in the Pod template. If they do not match, the Deployment cannot manage those Pods.
+
+**`template`** — this is the Pod definition. Everything inside looks exactly like what we wrote in the first post: container name, image, ports. The Deployment uses this template to create each replica.
+
+## Applying and checking it
+
+<CodeExample
+  filename="apply-deployment"
+  lang="bash"
+  code={`# Apply the manifest
+kubectl apply -f deployment.yaml
+
+# Check the Deployment status
+kubectl get deployment nginx-deployment
+
+# Check the Pods it created
+kubectl get pods -l app=nginx`}
+/>
+
+The `-l app=nginx` flag filters Pods by label, so we only see the ones this Deployment manages.
+
+## What a rollout looks like
+
+When we update the image version, Kubernetes does not delete all Pods at once. It rolls out the change gradually — bringing up new Pods before taking down old ones. That is the default strategy called `RollingUpdate`.
+
+<CodeExample
+  filename="update-image"
+  lang="bash"
+  code={`# Update the image version
+kubectl set image deployment/nginx-deployment nginx=nginx:1.29
+
+# Watch the rollout happen
+kubectl rollout status deployment/nginx-deployment`}
+/>
+
+If something goes wrong, we can roll back:
+
+<CodeExample
+  filename="rollback"
+  lang="bash"
+  code={`kubectl rollout undo deployment/nginx-deployment`}
+/>
+
+## Scaling
+
+Changing replica count is one line:
+
+<CodeExample
+  filename="scale"
+  lang="bash"
+  code={`kubectl scale deployment nginx-deployment --replicas=5`}
+/>
+
+Or we can edit the manifest and re-apply. Either works, but keeping the manifest in sync is better for long-term consistency.
+
+## Why Deployments almost always win
+
+Bare Pods are fine for learning. For anything that needs to stay up, handle traffic, or get updated without downtime — Deployments are the default choice. They give us self-healing, rolling updates, and rollback with very little extra config.
+
+The next step after this is usually a Service, which exposes the Deployment's Pods to traffic. That is worth a separate post.
