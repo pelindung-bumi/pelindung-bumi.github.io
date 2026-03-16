@@ -1,0 +1,66 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+
+const email = 'contact@pelindungbumi.dev';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Contact — ${SITE_TITLE}`} description="Get in touch with the Pelindung Bumi team." />
+	</head>
+	<body class="min-h-screen bg-background text-foreground">
+		<Header />
+		<main class="page-shell py-10 sm:py-14">
+			<section class="surface-panel p-6 sm:p-8 lg:p-10">
+				<div class="page-intro max-w-2xl">
+					<span class="section-label">Contact</span>
+					<h1 class="display-title mt-6 text-[clamp(2.8rem,6vw,5rem)]">Say hello.</h1>
+					<p class="lede mt-6">
+						Got a question, a typo to report, or just want to talk infra? Drop us an email.
+						We read everything.
+					</p>
+				</div>
+			</section>
+
+			<section class="mt-8 section-grid cols-2">
+				<div class="info-card flex flex-col gap-4">
+					<p class="eyebrow">Email us</p>
+					<h3 class="mt-0">{email}</h3>
+					<p>
+						For anything — feedback, questions, corrections, or just to say hi.
+						We'll get back to you when we can.
+					</p>
+					<a
+						href={`mailto:${email}`}
+						class="button-link secondary self-start"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<rect width="20" height="16" x="2" y="4" rx="2"/>
+							<path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+						</svg>
+						Send message to {email}
+					</a>
+				</div>
+
+				<div class="info-card flex flex-col gap-4">
+					<p class="eyebrow">Response time</p>
+					<h3 class="mt-0">We're pretty quick.</h3>
+					<p>
+						Usually within a day or two. If it's been a while, feel free to ping again —
+						things sometimes slip through.
+					</p>
+					<div class="article-meta mt-auto">
+						<span class="meta-pill">Rivaldo</span>
+						<span class="meta-pill">Leo</span>
+						<span class="meta-pill">Rolando</span>
+					</div>
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
