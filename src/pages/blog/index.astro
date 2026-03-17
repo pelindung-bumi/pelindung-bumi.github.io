@@ -1,5 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
+import { type CollectionEntry, getCollection } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
@@ -7,14 +7,38 @@ import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 import { getBlogGitMeta } from '../../utils/blogGitMeta';
 
+const normalizeSearchText = (value: string) =>
+	value
+		.toLowerCase()
+		.replace(/```[\s\S]*?```/g, ' ')
+		.replace(/`[^`]*`/g, ' ')
+		.replace(/<[^>]+>/g, ' ')
+		.replace(/^import\s.+$/gm, ' ')
+		.replace(/^export\s.+$/gm, ' ')
+		.replace(/[#[\]_*~>|()-]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+
+type BlogPost = CollectionEntry<'blog'>;
+
 const posts = await Promise.all(
 	(await getCollection('blog'))
-		.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-		.map(async (post) => ({
+		.sort((a: BlogPost, b: BlogPost) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+		.map(async (post: BlogPost) => ({
 			post,
+			searchText: normalizeSearchText(
+				[
+					post.data.title,
+					post.data.description,
+					post.data.tags.join(' '),
+					post.body,
+				].join(' '),
+			),
 			gitMeta: await getBlogGitMeta(post),
 		})),
 );
+
+const allTags = [...new Set(posts.flatMap(({ post }) => post.data.tags))].sort((a: string, b: string) => a.localeCompare(b));
 ---
 
 <!doctype html>
@@ -34,12 +58,61 @@ const posts = await Promise.all(
 				</p>
 			</div>
 
-			<div class="mt-8 grid gap-6">
-				{posts.map(({ post, gitMeta }) => (
-					<article class="post-card">
+			<div class="blog-search-bar mt-10" data-blog-search>
+				<div class="search-input-shell">
+					<svg viewBox="0 0 24 24" aria-hidden="true" class="search-input-icon">
+						<path
+							fill="none"
+							stroke="currentColor"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="1.8"
+							d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0a7 7 0 0 1 14 0Z"
+						></path>
+					</svg>
+					<input
+						id="blog-search-input"
+						type="search"
+						class="search-input"
+						placeholder="Search posts..."
+						autocomplete="off"
+					/>
+					<button type="button" class="search-clear" data-search-clear hidden aria-label="Clear search">
+						<svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
+							<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6 6 18M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
+
+				<div class="tag-filter-row mt-4">
+					<button type="button" class="tag-chip is-active" data-tag-filter="">All</button>
+					{allTags.map((tag: string) => (
+						<button type="button" class="tag-chip" data-tag-filter={tag}>{tag}</button>
+					))}
+				</div>
+
+				<p class="search-results-copy mt-4" data-search-status>
+					{posts.length} posts
+				</p>
+			</div>
+
+			<div class="mt-6 grid gap-6" data-search-results>
+				{posts.map(({ post, gitMeta, searchText }) => (
+					<article class="post-card" data-search-item data-search-content={searchText} data-search-tags={post.data.tags.join('|')}>
 						<div class="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(14rem,0.8fr)] md:items-start">
 							<div>
-								<p class="eyebrow">Article</p>
+								<div class="post-card-top">
+									<p class="eyebrow">Article</p>
+									{post.data.tags.length > 0 && (
+										<div class="tag-list">
+											{post.data.tags.map((tag: string) => (
+												<button type="button" class="tag-chip tag-chip-inline" data-tag-choice={tag}>
+													{tag}
+												</button>
+											))}
+										</div>
+									)}
+								</div>
 								<h2 class="section-title mt-3 text-[clamp(1.9rem,4vw,3rem)]">
 									<a class="no-underline hover:text-primary" href={`/blog/${post.id}/`}>{post.data.title}</a>
 								</h2>
@@ -67,8 +140,129 @@ const posts = await Promise.all(
 					</article>
 				))}
 			</div>
+
+			<div class="empty-search-state mt-8" data-empty-state hidden>
+				<p class="lede">No posts match that search. Try a different keyword or clear the filters.</p>
+			</div>
 		</main>
 
 		<Footer />
+		<script>
+			function initBlogSearch() {
+				const root = document.querySelector('[data-blog-search]');
+				if (!(root instanceof HTMLElement)) return;
+
+				const input = document.getElementById('blog-search-input');
+				const clearButton = root.querySelector('[data-search-clear]');
+				const status = root.querySelector('[data-search-status]');
+				const emptyState = document.querySelector('[data-empty-state]');
+				const items = Array.from(document.querySelectorAll('[data-search-item]'));
+				const filterButtons = Array.from(root.querySelectorAll('[data-tag-filter]'));
+				const postTagButtons = Array.from(document.querySelectorAll('[data-tag-choice]'));
+
+				if (
+					!(input instanceof HTMLInputElement) ||
+					!(clearButton instanceof HTMLButtonElement) ||
+					!(status instanceof HTMLElement) ||
+					!(emptyState instanceof HTMLElement)
+				) {
+					return;
+				}
+
+				const searchInput = input;
+				const clearSearchButton = clearButton;
+				const statusEl = status;
+				const emptySearchState = emptyState;
+
+				if (root.dataset.bound === 'true') {
+					applyFilters();
+					return;
+				}
+				root.dataset.bound = 'true';
+
+				const params = new URLSearchParams(window.location.search);
+				let activeTag = params.get('tag')?.toLowerCase() ?? '';
+				searchInput.value = params.get('q') ?? '';
+
+				function syncUrl(query: string, tag: string) {
+					const p = new URLSearchParams();
+					if (query) p.set('q', query);
+					if (tag) p.set('tag', tag);
+					const qs = p.toString();
+					window.history.replaceState({}, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
+				}
+
+				function updateTagButtons() {
+					filterButtons.forEach((btn) => {
+						if (!(btn instanceof HTMLButtonElement)) return;
+						const t = (btn.dataset.tagFilter ?? '').toLowerCase();
+						btn.classList.toggle('is-active', t === activeTag || (!t && !activeTag));
+					});
+					postTagButtons.forEach((btn) => {
+						if (!(btn instanceof HTMLButtonElement)) return;
+						const t = (btn.dataset.tagChoice ?? '').toLowerCase();
+						btn.classList.toggle('is-active', t === activeTag);
+					});
+				}
+
+				function applyFilters() {
+					const query = searchInput.value.trim().toLowerCase();
+					let visible = 0;
+
+					items.forEach((item) => {
+						if (!(item instanceof HTMLElement)) return;
+						const content = item.dataset.searchContent ?? '';
+						const tags = (item.dataset.searchTags ?? '').split('|').filter(Boolean);
+						const show = (!query || content.includes(query)) && (!activeTag || tags.includes(activeTag));
+						item.hidden = !show;
+						if (show) visible++;
+					});
+
+					clearSearchButton.hidden = !query && !activeTag;
+					emptySearchState.hidden = visible > 0;
+
+					if (!query && !activeTag) {
+						statusEl.textContent = `${items.length} posts`;
+					} else {
+						statusEl.textContent = `${visible} of ${items.length} posts`;
+					}
+
+					updateTagButtons();
+					syncUrl(query, activeTag);
+				}
+
+				searchInput.addEventListener('input', applyFilters);
+
+				clearSearchButton.addEventListener('click', () => {
+					searchInput.value = '';
+					activeTag = '';
+					applyFilters();
+					searchInput.focus();
+				});
+
+				filterButtons.forEach((btn) => {
+					if (!(btn instanceof HTMLButtonElement)) return;
+					btn.addEventListener('click', () => {
+						const t = (btn.dataset.tagFilter ?? '').toLowerCase();
+						activeTag = t === activeTag ? '' : t;
+						applyFilters();
+					});
+				});
+
+				postTagButtons.forEach((btn) => {
+					if (!(btn instanceof HTMLButtonElement)) return;
+					btn.addEventListener('click', () => {
+						activeTag = (btn.dataset.tagChoice ?? '').toLowerCase();
+						applyFilters();
+						root.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+					});
+				});
+
+				applyFilters();
+			}
+
+			document.addEventListener('astro:page-load', initBlogSearch);
+			initBlogSearch();
+		</script>
 	</body>
 </html>
