@@ -1,0 +1,475 @@
+---
+title: 'The Complete NixOS Deployment Stack: Install Once, Manage Forever'
+description: 'Installing and Managing NixOS using nixos-anywhere, Disko, and Colmena'
+pubDate: 2026-03-17
+writerGithub: 'valdo766hi'
+---
+
+import CodeExample from '../../components/CodeExample.astro';
+
+When we first started managing NixOS machines, the install process felt disconnected from how we managed things later. We would install manually, take notes somewhere, and hope the next install would go the same way. It rarely did.
+
+The stack we are going to walk through today changes that. With `nixos-anywhere`, `Disko`, and `Colmena`, all working together inside a Nix flake, you describe a machine once and the same description handles both the initial install and every change you make afterward. The tooling takes care of the rest.
+
+This post goes through each tool, explains what it does, and shows you how they fit together into a workflow you can follow from the beginning.
+
+---
+
+## A quick note on flakes
+
+Before getting into the tools, it helps to understand what a Nix flake is doing here.
+
+A flake is a way to organize Nix code into a reproducible, self-contained package. It has inputs — like specific versions of `nixpkgs`, `disko`, or `colmena` — and outputs, which are the things we want to build or use. For our purposes, the main output is a set of `nixosConfigurations`, one per machine.
+
+Every tool in this stack reads from the same flake. That single source of truth is what makes the whole workflow consistent.
+
+If you have not used flakes before, you need to make sure they are enabled. Check if your Nix setup supports them by running:
+
+<CodeExample
+  filename="check-flakes"
+  lang="bash"
+  code={`nix flake --help`}
+/>
+
+If Nix tells you flakes are an experimental feature, you can enable them by adding this to your Nix configuration:
+
+<CodeExample
+  filename="nix.conf"
+  lang="bash"
+  code={`experimental-features = nix-command flakes`}
+/>
+
+---
+
+## What each tool is responsible for
+
+It is easier to understand this stack when you see each tool as having one clear job.
+
+### nixos-anywhere
+
+`nixos-anywhere` installs NixOS on a remote machine over SSH. You do not need physical access to the machine. You do not need to boot from a USB drive. You point it at an IP address, give it your flake, and it handles the rest.
+
+What it does:
+- Connects to the target machine over SSH
+- Uses `kexec` to boot into a NixOS installer environment if the machine is not already running NixOS
+- Runs `Disko` to partition and format the disks
+- Installs NixOS using the configuration in your flake
+- Optionally generates a `hardware-configuration.nix` for the target machine
+
+**Important:** `nixos-anywhere` completely overwrites the target machine. Never point it at a machine with data you want to keep.
+
+### Disko
+
+NixOS lets you describe almost everything as code, but disk partitioning has traditionally been a manual step. `Disko` fills that gap.
+
+You write a `disko.nix` file that describes how the disk should be laid out — partitions, filesystems, mount points — and `Disko` makes it so. This configuration becomes part of your flake, so every install of that machine will produce the same disk layout every time.
+
+`Disko` supports most common layouts: GPT, MBR, LVM, LUKS, ext4, btrfs, ZFS, and more.
+
+### Colmena
+
+Once a machine is installed, you will keep making changes to it. Maybe you add a new service, update a package, or change a configuration option. `Colmena` is what handles those day-to-day changes.
+
+`Colmena` is a stateless NixOS deployment tool. It reads your flake, builds the new system, and pushes it to one or more machines over SSH. It can deploy to multiple machines in parallel, and you can filter deployments by hostname or tag.
+
+The important thing: `Colmena` does not need to know how a machine was originally installed. It only needs SSH access and a valid flake.
+
+---
+
+## The mental model
+
+It helps to think about this in three phases:
+
+**Day 0 — Prepare the flake.** Write your `configuration.nix`, your `disko.nix`, and wire them into `flake.nix`. Add an SSH public key so you can access the machine after install.
+
+**Day 1 — Install the machine.** Run `nixos-anywhere` against the target machine's IP address. It installs NixOS, formats the disk with `Disko`, and generates a hardware configuration. You commit that hardware config back to the flake.
+
+**Day 2 and beyond — Manage changes.** Edit your configuration files. Run `Colmena` to apply the changes. Repeat indefinitely.
+
+The machine is installed once. Everything after that is managed through the same flake.
+
+---
+
+## A simple flake layout for one host
+
+Here is the folder structure we recommend when managing a single host. It is easy to extend to multiple hosts later.
+
+<CodeExample
+  filename="project layout"
+  lang="text"
+  code={`my-infra/
+├── flake.nix
+├── flake.lock
+└── hosts/
+    └── my-server/
+        ├── configuration.nix
+        ├── disko.nix
+        └── hardware-configuration.nix`}
+/>
+
+Each piece has one purpose:
+
+- `flake.nix` — declares inputs and wires up host configurations
+- `hosts/my-server/configuration.nix` — the NixOS configuration for that machine
+- `hosts/my-server/disko.nix` — the disk layout for that machine
+- `hosts/my-server/hardware-configuration.nix` — generated during the first install by `nixos-anywhere`, describes the actual hardware
+
+---
+
+## Writing the flake
+
+Here is a minimal `flake.nix` that supports `nixos-anywhere` installs, `Disko` disk layouts, and `Colmena` deployments for one host:
+
+<CodeExample
+  filename="flake.nix"
+  lang="nix"
+  code={`{
+  description = "My NixOS infrastructure";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    colmena = {
+      url = "github:zhaofengli/colmena";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = inputs @ { self, nixpkgs, disko, colmena, ... }: {
+
+    nixosConfigurations.my-server = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        disko.nixosModules.disko
+        ./hosts/my-server/configuration.nix
+        ./hosts/my-server/hardware-configuration.nix
+      ];
+    };
+
+    colmena = {
+      meta = {
+        nixpkgs = import nixpkgs { system = "x86_64-linux"; };
+      };
+
+      my-server = {
+        imports = [
+          disko.nixosModules.disko
+          ./hosts/my-server/configuration.nix
+          ./hosts/my-server/hardware-configuration.nix
+        ];
+        deployment = {
+          targetHost = "your-server-ip";
+          targetUser = "root";
+          allowLocalDeployment = true;
+        };
+      };
+    };
+
+    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+
+  };
+}`}
+/>
+
+A few things worth noting here:
+
+- `disko.nixosModules.disko` is imported in both `nixosConfigurations` and `colmena`. This is what activates the disk layout as part of the NixOS system.
+- `colmenaHive` is required by the current Colmena flake integration. It tells Colmena which output to use.
+- The `hardware-configuration.nix` import is there as a placeholder. It will be generated during the first install.
+
+---
+
+## Writing a minimal NixOS configuration
+
+Here is a starting point for `configuration.nix`. This gives you a bootable machine with SSH access:
+
+<CodeExample
+  filename="hosts/my-server/configuration.nix"
+  lang="nix"
+  code={`{ pkgs, ... }:
+
+{
+  imports = [ ./disko.nix ];
+
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    efiInstallAsRemovable = true;
+  };
+
+  networking.hostName = "my-server";
+
+  services.openssh = {
+    enable = true;
+    settings.PermitRootLogin = "prohibit-password";
+  };
+
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAA... your-public-key-here"
+  ];
+
+  environment.systemPackages = with pkgs; [ git vim ];
+
+  system.stateVersion = "25.05";
+}`}
+/>
+
+Replace `your-public-key-here` with your actual SSH public key. You will not be able to log in after install without this.
+
+---
+
+## Describing the disk layout with Disko
+
+Here is a simple `disko.nix` for a single disk with a GPT partition table, an EFI boot partition, and an ext4 root:
+
+<CodeExample
+  filename="hosts/my-server/disko.nix"
+  lang="nix"
+  code={`{
+  disko.devices = {
+    disk = {
+      main = {
+        device = "/dev/sda";
+        type = "disk";
+        content = {
+          type = "gpt";
+          partitions = {
+            ESP = {
+              type = "EF00";
+              size = "512M";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+                mountOptions = [ "umask=0077" ];
+              };
+            };
+            root = {
+              size = "100%";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/";
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}`}
+/>
+
+Check which disk name your target machine uses before install. You can do this by SSHing into the machine and running `lsblk`. Adjust `/dev/sda` to match your actual disk — on some machines it might be `/dev/vda` or `/dev/nvme0n1`.
+
+---
+
+## Installing the machine with nixos-anywhere
+
+Before running the install, lock your flake to pin the dependency versions:
+
+<CodeExample
+  filename="lock the flake"
+  lang="bash"
+  code={`nix flake lock`}
+/>
+
+Now run `nixos-anywhere`. You do not need to install it separately — you can run it directly from `nixpkgs`:
+
+<CodeExample
+  filename="run nixos-anywhere"
+  lang="bash"
+  code={`nix run nixpkgs#nixos-anywhere -- \\
+  --generate-hardware-config nixos-generate-config ./hosts/my-server/hardware-configuration.nix \\
+  --flake .#my-server \\
+  --target-host root@your-server-ip`}
+/>
+
+What each flag does:
+
+- `--generate-hardware-config nixos-generate-config ./hosts/...` — generates `hardware-configuration.nix` on the target and saves it locally
+- `--flake .#my-server` — points to the `my-server` output in your local flake
+- `--target-host root@your-server-ip` — the machine to install onto
+
+The process takes a few minutes. When it finishes, you will see:
+
+<CodeExample
+  filename="expected output"
+  lang="text"
+  code={`Installation finished. No error reported.`}
+/>
+
+The machine is now running NixOS. It also generated `hardware-configuration.nix` in your local `hosts/my-server/` folder. Commit that file to your repository so future deployments include it.
+
+After install, the machine's SSH host key has changed. If you connected to it before, remove the old entry from your `known_hosts`:
+
+<CodeExample
+  filename="clear old ssh host key"
+  lang="bash"
+  code={`ssh-keygen -R your-server-ip`}
+/>
+
+---
+
+## Managing changes with Colmena
+
+After the first install, you should not use `nixos-anywhere` again for regular changes. That is what `Colmena` is for.
+
+Colmena reads your flake and applies whatever is in the `colmena` output to the target machines over SSH. The basic command is:
+
+<CodeExample
+  filename="apply changes with colmena"
+  lang="bash"
+  code={`nix run github:zhaofengli/colmena -- apply --on my-server`}
+/>
+
+If the target machine is better suited to build the system itself (for example when your local machine is macOS and cross-compilation is awkward), you can tell Colmena to build on the target:
+
+<CodeExample
+  filename="build on target"
+  lang="bash"
+  code={`nix run github:zhaofengli/colmena -- apply --build-on-target --on my-server`}
+/>
+
+If you have multiple machines, Colmena can deploy to all of them at once, or you can filter by tag:
+
+<CodeExample
+  filename="deploy to multiple hosts"
+  lang="bash"
+  code={`# Deploy to all hosts
+nix run github:zhaofengli/colmena -- apply
+
+# Deploy to a specific host
+nix run github:zhaofengli/colmena -- apply --on my-server
+
+# Deploy to hosts with a specific tag
+nix run github:zhaofengli/colmena -- apply --on @web`}
+/>
+
+Tags are defined in the `deployment.tags` field per host inside the `colmena` output. They are useful once you have several machines grouped by role.
+
+---
+
+## Validating before you deploy
+
+Before applying changes to a real machine, you can build the system locally to catch any evaluation errors:
+
+<CodeExample
+  filename="validate locally"
+  lang="bash"
+  code={`nix build .#nixosConfigurations.my-server.config.system.build.toplevel`}
+/>
+
+If the build succeeds, you know the configuration evaluates cleanly. This is not a full test, but it catches typos and missing modules before they reach a production machine.
+
+---
+
+## A complete workflow from the beginning
+
+Here is the full sequence for someone starting from a blank project:
+
+<CodeExample
+  filename="full workflow"
+  lang="bash"
+  code={`# 1. Create the project structure
+mkdir -p my-infra/hosts/my-server
+cd my-infra
+
+# 2. Write flake.nix, configuration.nix, and disko.nix
+
+# 3. Lock the flake
+nix flake lock
+
+# 4. Install the machine (hardware-configuration.nix will be generated)
+nix run nixpkgs#nixos-anywhere -- \\
+  --generate-hardware-config nixos-generate-config ./hosts/my-server/hardware-configuration.nix \\
+  --flake .#my-server \\
+  --target-host root@your-server-ip
+
+# 5. Commit the generated hardware configuration
+git add hosts/my-server/hardware-configuration.nix
+git commit -m "add hardware configuration for my-server"
+
+# 6. Make changes to configuration.nix as needed
+
+# 7. Apply changes with Colmena
+nix run github:zhaofengli/colmena -- apply --on my-server`}
+/>
+
+This is the whole loop. Install once, manage forever.
+
+---
+
+## Adding more hosts
+
+When you need a second machine, the pattern is the same. Add a new directory under `hosts/`, write its configuration and disko files, add it to `flake.nix` under both `nixosConfigurations` and `colmena`, then install it with `nixos-anywhere`.
+
+If you find yourself sharing configuration between machines — a common SSH setup, shared packages, or firewall rules — pull that into a shared module:
+
+<CodeExample
+  filename="project layout with modules"
+  lang="text"
+  code={`my-infra/
+├── flake.nix
+├── flake.lock
+├── modules/
+│   └── common.nix
+└── hosts/
+    ├── web-server/
+    │   ├── configuration.nix
+    │   ├── disko.nix
+    │   └── hardware-configuration.nix
+    └── db-server/
+        ├── configuration.nix
+        ├── disko.nix
+        └── hardware-configuration.nix`}
+/>
+
+Each host imports `modules/common.nix` for shared settings, and keeps its own specific configuration in its `configuration.nix`. This keeps things organized without repeating yourself.
+
+---
+
+## How we use this in Semesta
+
+[Semesta](https://github.com/pelindung-bumi/semesta) is our own infrastructure repository. It follows the same layout described above — one directory per host under `hosts/`, shared logic under `modules/nixos/`, and a `flake.nix` that wires everything together.
+
+It currently manages three machines:
+
+- `vpn` — a self-hosted NetBird VPN node
+- `lb01` — an nginx load balancer for the Kubernetes API
+- `kube01` — a single-node k3s cluster
+
+Each host has its own `disko.nix` for the disk layout, `configuration.nix` for the NixOS setup, and `hardware-configuration.nix` generated during the first install.
+
+The operating pattern is exactly what this post describes:
+
+- First install: `nixos-anywhere` with `--generate-hardware-config` to install and capture hardware details
+- Day-to-day: `colmena apply --build-on-target --on <host>` to apply changes from the flake
+
+If you are curious about what a working multi-host setup looks like, Semesta is a small and readable example.
+
+---
+
+## Looking ahead
+
+This stack covers a lot of ground already. But there is a project worth watching if you want to take declarative infrastructure even further: [clan.lol](https://clan.lol/).
+
+Clan is a peer-to-peer computer management framework built on top of NixOS. It aims to make secrets management, service provisioning, and backups as declarative as the rest of your system. The nixos-anywhere quickstart guide actually lists Clan as one of its recommended next steps after installation.
+
+We have not explored it deeply yet, but it looks like a natural continuation of the ideas in this post. Maybe we will write about it in the future.
+
+---
+
+## References
+
+- [nixos-anywhere — Install NixOS everywhere via SSH](https://github.com/nix-community/nixos-anywhere)
+- [nixos-anywhere quickstart guide](https://nix-community.github.io/nixos-anywhere/quickstart.html)
+- [Disko — Declarative disk partitioning](https://github.com/nix-community/disko)
+- [Colmena — A simple, stateless NixOS deployment tool](https://github.com/zhaofengli/colmena)
+- [Semesta — our own infrastructure repo using this stack](https://github.com/pelindung-bumi/semesta)
+- [clan.lol — Backbone of independent infrastructure](https://clan.lol/)
