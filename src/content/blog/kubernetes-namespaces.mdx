@@ -1,0 +1,198 @@
+---
+title: 'Kubernetes Namespaces: organizing a cluster'
+description: 'A single cluster can run workloads for multiple teams, environments, or apps. Namespaces keep them separated without needing separate clusters.'
+tags: ['kubernetes', 'namespaces', 'infrastructure', 'organization']
+pubDate: 2026-03-20
+writerGithub: 'pelindung-bumi'
+---
+
+import CodeExample from '../../components/CodeExample.astro';
+
+As a cluster grows, things get messy. Dev workloads next to production. One team's services colliding with another's. Resources with the same name overwriting each other. Namespaces are Kubernetes' answer to this — a way to divide a single cluster into isolated sections.
+
+## What namespaces are
+
+A namespace is a logical boundary inside a cluster. Resources inside one namespace are separate from resources in another. You can have a Pod named `nginx` in `namespace-a` and another Pod named `nginx` in `namespace-b` — they don't conflict.
+
+Most Kubernetes resources are namespace-scoped: Pods, Deployments, Services, ConfigMaps, Secrets. A few are cluster-scoped and exist outside namespaces: Nodes, PersistentVolumes, ClusterRoles.
+
+## Default namespaces
+
+Every cluster comes with a few namespaces out of the box:
+
+<CodeExample
+  filename="get-namespaces"
+  lang="bash"
+  code={`kubectl get namespaces`}
+/>
+
+You'll see:
+
+- `default` — where resources go if you don't specify a namespace
+- `kube-system` — Kubernetes system components (DNS, scheduler, controller manager)
+- `kube-public` — readable by everyone, used for cluster info
+- `kube-node-lease` — heartbeat objects for node health tracking
+
+Don't put your workloads in `kube-system`. Keep it clean.
+
+## Creating a namespace
+
+<CodeExample
+  filename="namespace.yaml"
+  lang="yaml"
+  code={`apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging`}
+/>
+
+<CodeExample
+  filename="apply-namespace"
+  lang="bash"
+  code={`kubectl apply -f namespace.yaml
+
+# Or create it directly without a file
+kubectl create namespace staging`}
+/>
+
+## Deploying into a namespace
+
+Add `namespace` to the resource's metadata:
+
+<CodeExample
+  filename="deployment-in-namespace.yaml"
+  lang="yaml"
+  code={`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80`}
+/>
+
+Or pass it via kubectl:
+
+<CodeExample
+  filename="kubectl-namespace-flag"
+  lang="bash"
+  code={`kubectl apply -f deployment.yaml -n staging
+kubectl get pods -n staging
+kubectl get all -n staging`}
+/>
+
+## Working across namespaces
+
+By default, kubectl commands target the `default` namespace. You can change the default for your current context:
+
+<CodeExample
+  filename="set-default-namespace"
+  lang="bash"
+  code={`# Set default namespace for current context
+kubectl config set-context --current --namespace=staging
+
+# Now all commands target staging without -n flag
+kubectl get pods
+
+# To see resources in all namespaces at once
+kubectl get pods --all-namespaces
+# or the shorter version
+kubectl get pods -A`}
+/>
+
+## Communication between namespaces
+
+Services in the same namespace can reach each other by name: `http://nginx-service`. Across namespaces, you use the full DNS name:
+
+```
+http://<service-name>.<namespace>.svc.cluster.local
+```
+
+So a service in `staging` calling one in `production`:
+
+```
+http://nginx-service.production.svc.cluster.local
+```
+
+## How we actually use namespaces
+
+A common pattern:
+
+<CodeExample
+  filename="common-namespaces.yaml"
+  lang="yaml"
+  code={`# Separate environments
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production`}
+/>
+
+Each environment gets its own namespace. Same cluster, same infrastructure cost, isolated workloads. Easier to give teams access to their own namespace without touching others.
+
+Another pattern is per-team namespaces: `team-backend`, `team-frontend`, `team-data`. Depends on how your org is structured.
+
+## Deleting a namespace
+
+One thing to know: deleting a namespace deletes everything inside it.
+
+<CodeExample
+  filename="delete-namespace"
+  lang="bash"
+  code={`# This deletes ALL resources in the namespace
+kubectl delete namespace staging`}
+/>
+
+Be careful with this in production. It's thorough.
+
+## Resource quotas per namespace
+
+You can limit how much CPU and memory a namespace can consume — useful when multiple teams share a cluster and you don't want one team starving the others:
+
+<CodeExample
+  filename="resource-quota.yaml"
+  lang="yaml"
+  code={`apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: staging-quota
+  namespace: staging
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    pods: "20"`}
+/>
+
+The namespace can't exceed these limits. New Pods that would push it over will be rejected.
+
+## Keeping things organized
+
+Namespaces don't replace good naming conventions, but they help a lot when a cluster grows. Dev and production on the same cluster with namespace separation is common. Multiple teams sharing infrastructure with quotas per namespace is also common.
+
+The main thing is consistency — pick a pattern early and stick to it. Retrofitting namespaces into an existing cluster where everything is in `default` is annoying.
