@@ -7,6 +7,7 @@ Pelindung Bumi is a minimalist technology learning blog for curious people who w
 - Astro
 - Bearnie as the base template
 - Bun for package management and scripts
+- Nix flake for reproducible dev environment
 
 ## What This Site Is
 
@@ -41,6 +42,16 @@ Pelindung Bumi is a small organization that writes in public. The goal is simple
 ├── package.json
 └── tsconfig.json
 ```
+
+## Nix Dev Shell
+
+If you use Nix, enter the dev environment with:
+
+```bash
+nix develop --no-pure-eval --command zsh
+```
+
+This provides Node 22, npm, bun, and git — everything needed to run the project.
 
 ## Commands
 
