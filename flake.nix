@@ -2,46 +2,46 @@
   description = "Pelindung Bumi — Astro blog dev environment";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
+    systems.url = "github:nix-systems/default";
+    devenv.url = "github:cachix/devenv";
+    devenv.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = inputs @ { self, nixpkgs, ... }:
-    let
-      lib = nixpkgs.lib;
-      supportedSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "aarch64-darwin"
-      ];
-      forAllSystems = lib.genAttrs supportedSystems;
+  nixConfig = {
+    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    extra-substituters = "https://devenv.cachix.org";
+  };
 
-      mkPkgs = system:
-        import nixpkgs {
-          inherit system;
-          config.allowUnfree = true;
-        };
+  outputs = { self, nixpkgs, devenv, systems, ... } @ inputs:
+    let
+      forEachSystem = nixpkgs.lib.genAttrs (import systems);
     in
     {
-      formatter = forAllSystems (system: (mkPkgs system).nixfmt-rfc-style);
+      devShells = forEachSystem
+        (system:
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+          in
+          {
+            default = devenv.lib.mkShell {
+              inherit inputs pkgs;
+              modules = [
+                {
+                  packages = with pkgs; [
+                    git
+                    bun
+                    nodejs_22
+                    nodePackages.npm
+                  ];
 
-      devShells = forAllSystems (system:
-        let
-          pkgs = mkPkgs system;
-        in
-        {
-          default = pkgs.mkShell {
-            packages = with pkgs; [
-              git
-              nodejs_22
-              nodePackages.npm
-              bun
-            ];
-
-            shellHook = ''
-              echo "Pelindung Bumi dev environment"
-              echo "Node $(node --version) | npm $(npm --version) | bun $(bun --version)"
-            '';
-          };
-        });
+                  enterShell = ''
+                    echo "Pelindung Bumi dev environment"
+                    echo "Node $(node --version) | npm $(npm --version) | bun $(bun --version)"
+                  '';
+                }
+              ];
+            };
+          });
     };
 }
