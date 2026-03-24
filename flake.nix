@@ -17,6 +17,7 @@
             nodejs_22
             nodePackages.npm
             bun
+            git
           ];
 
           shellHook = ''
