@@ -4,9 +4,16 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
+    devenv.url = "github:cachix/devenv";
+    devenv.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, systems, ... }:
+  nixConfig = {
+    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    extra-substituters = "https://devenv.cachix.org";
+  };
+
+  outputs = { self, nixpkgs, devenv, systems, ... } @ inputs:
     let
       forEachSystem = nixpkgs.lib.genAttrs (import systems);
     in
@@ -18,18 +25,23 @@
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
-          default = pkgs.mkShell {
-            packages = with pkgs; [
-              git
-              nodejs_22
-              nodePackages.npm
-              bun
-            ];
+          default = devenv.lib.mkShell {
+            inherit inputs pkgs;
+            modules = [
+              {
+                packages = with pkgs; [
+                  git
+                  bun
+                  nodejs_22
+                  nodePackages.npm
+                ];
 
-            shellHook = ''
-              echo "Pelindung Bumi dev environment"
-              echo "Node $(node --version) | npm $(npm --version) | bun $(bun --version)"
-            '';
+                enterShell = ''
+                  echo "Pelindung Bumi dev environment"
+                  echo "Node $(node --version) | npm $(npm --version) | bun $(bun --version)"
+                '';
+              }
+            ];
           };
         });
     };
